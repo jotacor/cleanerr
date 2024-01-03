@@ -2,11 +2,11 @@
 
 from config import Config
 from synology_api.downloadstation import DownloadStation
-import radarr
 import logging as log
-import sys
+import os
+import radarr
 import requests
-
+import sys
 
 def app():
     c = Config()
@@ -40,9 +40,14 @@ def app():
                 ds.delete_task(ds_tasks[filename])
             else:
                 log.warning(f"Movie '{movie['title']}' not found in DownloadStation")
-            
+
             log.info(f"Deleting '{movie['title']}' movie from Radarr")
             rdr_movie.delete_movie(movie['id'])
+            try:
+                log.info(f"Deleting '{movie['title']}' movie from disk")
+                os.remove(f"/pelis/{filename}")
+            except OSError:
+                log.warning(f"Filename not found '/pelis/{filename}'")
 
     log.info("Ending...")
 
