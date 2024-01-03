@@ -1,0 +1,15 @@
+version: "3"
+services:
+  cleanerr:
+    image: jotacor/cleanerr:latest
+    container_name: cleanerr
+    network_mode: bridge
+    restart: no
+    environment:
+      - LOG_LEVEL=INFO
+      - RADARR=http://localhost:7878
+      - RADARR_API=radarr-api-key
+      - DS_IP=localhost
+      - DS_PORT=8000
+      - DS_USER=dstation-user
+      - DS_PASSWORD=dstation-passwd
