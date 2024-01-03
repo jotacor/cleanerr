@@ -5,8 +5,6 @@ services:
     container_name: cleanerr
     network_mode: bridge
     restart: no
-    volumes:
-      - /volume1/video/downloads/pelis:/pelis
     environment:
       - LOG_LEVEL=INFO
       - RADARR=http://localhost:7878
