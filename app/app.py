@@ -29,8 +29,8 @@ def app():
     tlist = ds.tasks_list()
     ds_tasks = dict()
     for task in tlist['data']['tasks']:
-        if not any([status for status in task['additional']['tracker'] if status['status'] == 'Success']):
-            log.info(f"Deleting '{task['title']}' not yet in tracker from DownloadStation")
+        if task['status'] == 'error' or ('tracker' in task['additional'] and not any([status for status in task['additional']['tracker'] if status['status'] == 'Success'])):
+            log.info(f"Deleting '{task['title']}' not yet in tracker or '{task['status']}' from DownloadStation")
             ds.delete_task(task['id'])
             continue
 
