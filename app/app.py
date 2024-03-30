@@ -14,7 +14,7 @@ def radarr_api(config):
     rdr_deleted = dict()
     headers = {'X-Api-Key': config.radarrAPIkey, 'accept': 'application/json'}
     eventMovieFileDeleted = 6
-    response = requests.get(config.radarrHost+f'/api/v3/history?page=1&pageSize=10&eventType={eventMovieFileDeleted}', headers=headers)
+    response = requests.get(config.radarrHost+f'/api/v3/history?page=1&pageSize=30&eventType={eventMovieFileDeleted}', headers=headers)
     if response.status_code == 200:
         r = response.json()
         for deleted in r['records']:
