@@ -18,13 +18,14 @@ def app():
     dmu = DelMoviesUnwatched(config)
     dmu.delete()
 
-    dtu = DelTvUnwatched(config)
-    dtu.delete()
+    # dtu = DelTvUnwatched(config)
+    # dtu.delete()
 
-    dm = DelMovie(config)
-    dm.delete('title')
+    # dm = DelMovie(config)
+    # dm.delete('title')
 
-    ds = DownloadStation(config)
+    # ds = DownloadStation(config)
+    # ds.delete_no_tracked()
 
     log.info("Ending...")
 
