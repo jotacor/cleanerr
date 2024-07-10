@@ -3,7 +3,6 @@
 from config import Config
 from delete_movies import DeleteMovies
 from delete_tv import DeleteTv
-from synology_api.filestation import FileStation
 from download_station import DownloadStation
 import logging as log
 import sys

@@ -6,6 +6,7 @@ import jq
 import sys
 import logging as log
 from download_station import DownloadStation
+from synology_api.filestation import FileStation
 
 class DeleteMovies:
     def __init__(self, config):
@@ -102,8 +103,8 @@ class DeleteMovies:
                     + str(radarr["id"])
                     + f"?apiKey={self.config.radarrAPIkey}&deleteFiles=true"
                 )
-                ds = DownloadStation(self.config).delete_task(radarr)
-                # delete from FS
+                DownloadStation(self.config).delete_task(radarr)
+                # Delete from FS
 
             try:
                 if not self.config.dryrun and self.config.overseerrAPIkey is not None:
