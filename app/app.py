@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 from config import Config
-from del_movies_unwatched import DelMoviesUnwatched
-from del_tv_unwatched import DelTvUnwatched
-from del_movie import DelMovie
+from delete_movies import DeleteMovies
+from delete_tv import DeleteTv
 from synology_api.filestation import FileStation
 from download_station import DownloadStation
 import logging as log
@@ -15,14 +14,11 @@ def app():
     log.info("Initiating...")
     config = Config()
 
-    dmu = DelMoviesUnwatched(config)
-    dmu.delete()
+    dmu = DeleteMovies(config)
+    dmu.delete_unwatched()
 
-    # dtu = DelTvUnwatched(config)
-    # dtu.delete()
-
-    # dm = DelMovie(config)
-    # dm.delete('title')
+    # dtu = DeleteTv(config)
+    # dtu.delete_unwatched()
 
     # ds = DownloadStation(config)
     # ds.delete_no_tracked()

@@ -7,7 +7,7 @@ import sys
 import logging as log
 from download_station import DownloadStation
 
-class DelMoviesUnwatched:
+class DeleteMovies:
     def __init__(self, config):
         self.config = config
         if not self.config.check("tautulliAPIkey", "radarrAPIkey"):
@@ -27,7 +27,7 @@ class DelMoviesUnwatched:
         except Exception as e:
             self.protected_tags = []
 
-    def delete(self):
+    def delete_unwatched(self):
         today = round(datetime.now().timestamp())
         totalsize = 0
         r = requests.get(
