@@ -57,6 +57,10 @@ class DeleteMovies:
 
         log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
 
+    # TODO
+    # def clean_unmonitored_nofile(self):
+    #  # if not movie['hasFile'] and not movie['monitored']:
+    
     def __purge(self, movie):
         deletesize = 0
         tmdbid = None
@@ -104,7 +108,7 @@ class DeleteMovies:
                     + f"?apiKey={self.config.radarrAPIkey}&deleteFiles=true"
                 )
                 DownloadStation(self.config).delete_task(radarr)
-                # Delete from FS
+                # TODO: Delete from FS
 
             try:
                 if not self.config.dryrun and self.config.overseerrAPIkey is not None:

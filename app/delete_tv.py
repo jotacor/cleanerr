@@ -6,6 +6,7 @@ import jq
 import sys
 import logging as log
 
+# TODO: ALL
 class DelTvUnwatched:
     def __init__(self, config):
         self.config = config
