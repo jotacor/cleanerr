@@ -6,18 +6,16 @@ class DownloadStation:
     def __init__(self, config):
         self.ds = DS(config.dsIp, config.dsPort, config.dsUser, config.dsPassword, debug=True)
 
-    def delete_task(self, movie):
+    def delete_task(self, taskname):
         all_tasks = self.ds.tasks_list()
         ds_tasks = dict()
         for task in all_tasks['data']['tasks']:
             ds_tasks.update({task['title']: task['id']})
-        
-        filename = movie['movieFile']['originalFilePath']
-        if filename in ds_tasks:
-            log.info(f"Deleting '{movie['title']}' from DownloadStation")
-            self.ds.delete_task(ds_tasks[filename])
-        else:
-            log.warning(f"Movie '{movie['title']}' not found in DownloadStation")
+
+        log.info(f"Deleting '{taskname}' from DownloadStation")
+        r = self.ds.delete_task(ds_tasks[taskname])
+        if r['data'][0]['error'] != 0:
+            log.warning(f"Task '{taskname}' not found in DownloadStation")
 
     def delete_no_tracked(self):
         all_tasks = self.ds.tasks_list()

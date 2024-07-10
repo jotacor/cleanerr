@@ -7,7 +7,7 @@ import sys
 import logging as log
 
 # TODO: ALL
-class DelTvUnwatched:
+class DeleteTv:
     def __init__(self, config):
         self.config = config
         if not self.config.check("tautulliAPIkey", "sonarrAPIkey"):

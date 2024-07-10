@@ -5,8 +5,8 @@ import requests
 import jq
 import sys
 import logging as log
-from download_station import DownloadStation
-from synology_api.filestation import FileStation
+from downloadstation import DownloadStation
+from filestation import FileStation
 
 class DeleteMovies:
     def __init__(self, config):
@@ -65,11 +65,11 @@ class DeleteMovies:
         deletesize = 0
         tmdbid = None
 
-        r = requests.get(
+        t = requests.get(
             f"{self.config.tautulliHost}/api/v2/?apikey={self.config.tautulliAPIkey}&cmd=get_metadata&rating_key={movie['rating_key']}"
         )
 
-        guids = jq.compile(".[].data.guids").input(r.json()).first()
+        guids = jq.compile(".[].data.guids").input(t.json()).first()
         try:
             if guids:
                 tmdbid = [i for i in guids if i.startswith("tmdb://")][0].split(
@@ -82,16 +82,16 @@ class DeleteMovies:
             )
             guids = []
 
-        f = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
+        r = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
         try:
             if guids:
                 radarr = (
-                    jq.compile(f".[] | select(.tmdbId == {tmdbid})").input(f.json()).first()
+                    jq.compile(f".[] | select(.tmdbId == {tmdbid})").input(r.json()).first()
                 )
             else:
                 radarr = (
                     jq.compile(f".[] | select(.title == \"{movie['title']}\")")
-                    .input(f.json())
+                    .input(r.json())
                     .first()
                 )
 
@@ -107,8 +107,8 @@ class DeleteMovies:
                     + str(radarr["id"])
                     + f"?apiKey={self.config.radarrAPIkey}&deleteFiles=true"
                 )
-                DownloadStation(self.config).delete_task(radarr)
-                # TODO: Delete from FS
+                DownloadStation(self.config).delete_task(radarr['movieFile']['originalFilePath'])
+                FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{radarr['movieFile']['originalFilePath']}")
 
             try:
                 if not self.config.dryrun and self.config.overseerrAPIkey is not None:

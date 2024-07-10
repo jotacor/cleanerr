@@ -3,7 +3,7 @@
 from config import Config
 from delete_movies import DeleteMovies
 from delete_tv import DeleteTv
-from download_station import DownloadStation
+from downloadstation import DownloadStation
 import logging as log
 import sys
 import os
