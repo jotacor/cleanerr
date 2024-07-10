@@ -57,10 +57,26 @@ class DeleteMovies:
 
         log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
 
-    # TODO
-    # def clean_unmonitored_nofile(self):
-    #  # if not movie['hasFile'] and not movie['monitored']:
+
+    # This cleans movies when it is deleted from Plex directly
+    def clean_unmonitored_nofile(self):
+        totalsize = 0
+        movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
+        for movie in movies.json():
+            if not movie['hasFile'] and not movie['monitored'] and not self.config.dryrun:
+                history = requests.get(f"{self.config.radarrHost}/api/v3/history/movie?movieId={movie['id']}&apiKey={self.config.radarrAPIkey}").json()
+                filename = history[0]['sourceTitle'].split("/")[-1]
+                requests.delete(
+                    f"{self.config.radarrHost}/api/v3/movie/"
+                    + str(movie["id"])
+                    + f"?apiKey={self.config.radarrAPIkey}&deleteFiles=true"
+                )
+                DownloadStation(self.config).delete_task(filename)
+                FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{filename}")
+
+        log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
     
+
     def __purge(self, movie):
         deletesize = 0
         tmdbid = None

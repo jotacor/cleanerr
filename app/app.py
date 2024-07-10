@@ -14,6 +14,7 @@ def app():
     config = Config()
 
     dmu = DeleteMovies(config)
+    dmu.clean_unmonitored_nofile()
     dmu.delete_unwatched()
 
     # dtu = DeleteTv(config)
