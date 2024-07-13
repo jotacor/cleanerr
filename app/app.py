@@ -16,11 +16,12 @@ def app():
 
     dtu = DeleteTv(config)
     dtu.delete_unwatched()
+    dtu.clean_unmonitored_nofile()
     pass
 
     dmu = DeleteMovies(config)
-    dmu.clean_unmonitored_nofile()
     dmu.delete_unwatched()
+    dmu.clean_unmonitored_nofile()
     pass
 
     ds = DownloadStation(config)
