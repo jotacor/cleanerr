@@ -4,6 +4,7 @@ import logging as log
 
 class DownloadStation:
     def __init__(self, config):
+        self.config = config
         self.ds = DS(config.dsIp, config.dsPort, config.dsUser, config.dsPassword, debug=True)
 
     def delete_task(self, taskname):
@@ -22,4 +23,5 @@ class DownloadStation:
         for task in all_tasks['data']['tasks']:
             if task['status'] == 'error' or ('tracker' in task['additional'] and not any([status for status in task['additional']['tracker'] if status['status'] == 'Success'])):
                 log.info(f"Deleting '{task['title']}' not yet in tracker or '{task['status']}' from DownloadStation")
-                self.ds.delete_task(task['id'])
+                if not self.config.dryrun:
+                    self.ds.delete_task(task['id'])

@@ -4,6 +4,7 @@ from config import Config
 from delete_movies import DeleteMovies
 from delete_tv import DeleteTv
 from downloadstation import DownloadStation
+from filestation import FileStation
 import logging as log
 import sys
 import os
@@ -13,15 +14,22 @@ def app():
     log.info("Initiating...")
     config = Config()
 
+    dtu = DeleteTv(config)
+    dtu.delete_unwatched()
+    pass
+
     dmu = DeleteMovies(config)
     dmu.clean_unmonitored_nofile()
     dmu.delete_unwatched()
+    pass
 
-    # dtu = DeleteTv(config)
-    # dtu.delete_unwatched()
+    ds = DownloadStation(config)
+    ds.delete_no_tracked()
+    pass
 
-    # ds = DownloadStation(config)
-    # ds.delete_no_tracked()
+    fs = FileStation(config)
+    fs.delete_empty_dirs(config.fsTvPath)
+    pass
 
     log.info("Ending...")
 

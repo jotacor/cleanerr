@@ -7,13 +7,14 @@ import sys
 import logging as log
 from downloadstation import DownloadStation
 from filestation import FileStation
+from tgram import Telegram
 
-# TODO: ALL
 class DeleteTv:
     def __init__(self, config):
         self.config = config
+        self.tg = Telegram(config)
         if not self.config.check("tautulliAPIkey", "sonarrAPIkey"):
-            log.error("ERROR: Required Tautulli/Sonarr API key not set. Cannot continue.")
+            log.error("Required Tautulli/Sonarr API key not set. Cannot continue.")
             sys.exit(1)
 
         self.config.apicheck(self.config.sonarrHost, self.config.sonarrAPIkey)
@@ -28,6 +29,27 @@ class DeleteTv:
             self.protected_tags = [int(i) for i in self.config.sonarrProtectedTags.split(",")]
         except Exception as e:
             self.protected_tags = []
+
+    # TODO: Doesn't work the seach for file to be deleted. Cleans when it is deleted from Plex directly
+    def clean_unmonitored_nofile(self):
+        totalsize = 0
+        fs = FileStation(self.config)
+        series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
+        for serie in series.json():
+            if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:
+                history = requests.get(f"{self.config.sonarrHost}/api/v3/history/series?seriesId={serie['id']}&eventType=episodeFileDeleted&apiKey={self.config.sonarrAPIkey}").json()
+                for chapter in history:
+                    fs.delete_file_search(self.config.fsTvPath, chapter['sourceTitle'].split("/")[-1])
+                
+                requests.delete(
+                    f"{self.config.sonarrHost}/api/v3/series/"
+                    + str(serie["id"])
+                    + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
+                )
+                # DownloadStation(self.config).delete_task(filename)
+                # fs.delete_file(f"{self.config.fsTvPath}/{filename}")
+
+        log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
 
     def delete_unwatched(self):
         today = round(datetime.now().timestamp())
@@ -51,13 +73,15 @@ class DeleteTv:
                                 totalsize = totalsize + self.__purge(series)
         except Exception as e:
             log.error(
-                "There was a problem connecting to Tautulli/Sonarr/Overseerr. Please double-check that your connection settings and API keys are correct.\n\nError message:\n"
+                "There was a problem connecting to Tautulli/Sonarr/Overseerr.\
+                 Please double-check that your connection settings and API keys are correct.\n\nError message:\n"
                 + str(e)
             )
             sys.exit(1)
 
-        log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
+        log.info(f"TV unwatched: {totalsize:.2f} GB")
 
+    # TODO: Delete from FS and DS
     def __purge(self, series):
         deletesize = 0
         tvdbid = None
@@ -118,7 +142,7 @@ class DeleteTv:
                         + ")][0].results[0].mediaInfo.id"
                     ).input(o.json())
                     o = requests.delete(
-                        f"{self.config.overseerrHost}/api/v1/media/" + str(overseerrid.text()),
+                        f"{self.config.overseerrHost}/api/v1/media/{overseerrid.text()}",
                         headers=headers,
                     )
             except Exception as e:
@@ -129,21 +153,11 @@ class DeleteTv:
                 action = "DRY RUN"
 
             deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-            log.info(
-                action
-                + ": "
-                + series["title"]
-                + " | "
-                + str("{:.2f}".format(deletesize))
-                + "GB"
-                + " | Sonarr ID: "
-                + str(sonarr["id"])
-                + " | TVDB ID: "
-                + str(sonarr["tvdbId"])
-            )
+            log.info(f"{action}: {series["title"]} | {deletesize:.2f} GB  | Radarr ID: {sonarr["id"]}  | TMDB ID: {sonarr["tvdbId"]}")
+
         except StopIteration:
             pass
         except Exception as e:
-            log.error(series["title"] + ": " + str(e))
+            log.error(f"{series["title"]}: {e})")
 
         return deletesize

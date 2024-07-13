@@ -7,10 +7,12 @@ import sys
 import logging as log
 from downloadstation import DownloadStation
 from filestation import FileStation
+from tgram import Telegram
 
 class DeleteMovies:
     def __init__(self, config):
         self.config = config
+        self.tg = Telegram(config)
         if not self.config.check("tautulliAPIkey", "radarrAPIkey"):
             log.error("Required Tautulli/Radarr API key not set. Cannot continue.")
             sys.exit(1)
@@ -55,10 +57,10 @@ class DeleteMovies:
             )
             sys.exit(1)
 
-        log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
+        log.info(f"Movies unwatched: {totalsize:.2f} GB")
 
 
-    # This cleans movies when it is deleted from Plex directly
+    # Cleans when it is deleted from Plex directly
     def clean_unmonitored_nofile(self):
         totalsize = 0
         movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
@@ -74,7 +76,7 @@ class DeleteMovies:
                 DownloadStation(self.config).delete_task(filename)
                 FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{filename}")
 
-        log.info("Total space reclaimed: " + str("{:.2f}".format(totalsize)) + "GB")
+        log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
     
 
     def __purge(self, movie):
@@ -130,13 +132,12 @@ class DeleteMovies:
                 if not self.config.dryrun and self.config.overseerrAPIkey is not None:
                     headers = {"X-Api-Key": f"{self.config.overseerrAPIkey}"}
                     o = requests.get(
-                        f"{self.config.overseerrHost}/api/v1/movie/" + str(radarr["tmdbId"]),
+                        f"{self.config.overseerrHost}/api/v1/movie/{radarr["tmdbId"]}",
                         headers=headers,
                     )
                     overseerr = json.loads(o.text)
                     o = requests.delete(
-                        f"{self.config.overseerrHost}/api/v1/media/"
-                        + str(overseerr["mediaInfo"]["id"]),
+                        f"{self.config.overseerrHost}/api/v1/media/{overseerr['mediaInfo']['id']}",
                         headers=headers,
                     )
             except Exception as e:
@@ -147,21 +148,11 @@ class DeleteMovies:
                 action = "DRY RUN"
 
             deletesize = int(movie["file_size"]) / 1073741824
-            log.info(
-                action
-                + ": "
-                + movie["title"]
-                + " | "
-                + str("{:.2f}".format(deletesize))
-                + "GB"
-                + " | Radarr ID: "
-                + str(radarr["id"])
-                + " | TMDB ID: "
-                + str(radarr["tmdbId"])
-            )
+            log.info(f"{action}: {movie["title"]} | {deletesize:.2f} GB  | Radarr ID: {radarr["id"]}  | TMDB ID: {radarr["tmdbId"]}")
+
         except StopIteration:
             pass
         except Exception as e:
-            log.error(f'{movie["title"]}: {str(e)}')
+            log.error(f'{movie["title"]}: {e}')
 
         return deletesize

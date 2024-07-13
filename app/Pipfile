@@ -10,6 +10,7 @@ synology-api = "0.7.2"
 jq = "1.7.0"
 python-dotenv = "1.0.0"
 requests = "2.31.0"
+python-telegram-bot = "21.4"
 
 [requires]
 python_version = ">=3.8"

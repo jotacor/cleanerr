@@ -32,6 +32,9 @@ class Config:
         self.sonarrHost = os.getenv("SONARR", "http://localhost:8989")
         self.sonarrAPIkey = os.getenv("SONARR_API")
         self.sonarrProtectedTags = os.getenv("SONARR_PROTECTED_TAGS")
+        self.telegram_chat_id = os.getenv("TELEGRAM_CHATID", None)
+        self.telegram_token = os.getenv("TELEGRAM_TOKEN", None)
+
         if self.dryrun:
             log.info("DRY_RUN enabled!")
 
