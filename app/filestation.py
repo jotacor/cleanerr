@@ -5,7 +5,7 @@ from time import time
 class FileStation:
     def __init__(self, config):
         self.config = config
-        self.fs = FS(config.dsIp, config.fsPort, config.dsUser, config.dsPassword, secure=False, cert_verify=False, dsm_version=7, otp_code=None, interactive_output=False, debug=True)
+        self.fs = FS(config.dsIp, config.fsPort, config.dsUser, config.dsPassword, secure=False, cert_verify=False, dsm_version=7, otp_code=None, interactive_output=False, debug=False)
 
     def delete_file(self, filename):
         log.info(f"Deleting '{filename}' from FileStation")

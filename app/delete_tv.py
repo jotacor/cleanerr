@@ -33,7 +33,7 @@ class DeleteTv:
     # TODO: Doesn't work the seach for file to be deleted. Cleans when it is deleted from Plex directly
     def clean_unmonitored_nofile(self):
         totalsize = 0
-        fs = FileStation(self.config)
+        # fs = FileStation(self.config)
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
         for serie in series.json():
             if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:

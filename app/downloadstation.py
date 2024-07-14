@@ -5,7 +5,7 @@ import logging as log
 class DownloadStation:
     def __init__(self, config):
         self.config = config
-        self.ds = DS(config.dsIp, config.dsPort, config.dsUser, config.dsPassword, debug=True)
+        self.ds = DS(config.dsIp, config.dsPort, config.dsUser, config.dsPassword, debug=False)
 
     def delete_task(self, taskname):
         all_tasks = self.ds.tasks_list()
