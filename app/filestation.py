@@ -9,7 +9,7 @@ class FileStation:
 
     def delete_file(self, filename):
         log.info(f"Deleting '{filename}' from FileStation")
-        self._delete(filename)
+        self.__delete(filename)
 
     def delete_file_search(self, directory, file):
         taskid = self.fs.search_start(folder_path=directory, pattern=file)['taskid']
