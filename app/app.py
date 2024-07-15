@@ -9,17 +9,20 @@ import logging as log
 import sys
 import os
 
+# TODO: unify DeleteTv and DeleteMovies
 def app():
     log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'WARN'), stream=sys.stdout)
     log.info("Initiating...")
     config = Config()
 
     dtu = DeleteTv(config)
+    dtu.clean_orphan_files()
     dtu.delete_unwatched()
     dtu.clean_unmonitored_nofile()
     pass
 
     dmu = DeleteMovies(config)
+    dmu.clean_orphan_files()
     dmu.delete_unwatched()
     dmu.clean_unmonitored_nofile()
     pass

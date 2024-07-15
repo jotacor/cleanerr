@@ -8,6 +8,7 @@ import logging as log
 from downloadstation import DownloadStation
 from filestation import FileStation
 from tgram import Telegram
+from time import time
 
 class DeleteTv:
     def __init__(self, config):
@@ -30,19 +31,11 @@ class DeleteTv:
         except Exception as e:
             self.protected_tags = []
 
-    # TODO: Doesn't work the seach for file to be deleted. Cleans when it is deleted from Plex directly
     def clean_unmonitored_nofile(self):
         totalsize = 0
-        # fs = FileStation(self.config)
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
         for serie in series.json():
             if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:
-                # history = requests.get(f"{self.config.sonarrHost}/api/v3/history/series?seriesId={serie['id']}&eventType=episodeFileDeleted&apiKey={self.config.sonarrAPIkey}").json()
-                # for chapter in history:
-                #     fs.delete_file_search(self.config.fsTvPath, chapter['sourceTitle'].split("/")[-1])
-                # DownloadStation(self.config).delete_task(filename)
-                # fs.delete_file(f"{self.config.fsTvPath}/{filename}")
-                
                 requests.delete(
                     f"{self.config.sonarrHost}/api/v3/series/"
                     + str(serie["id"])
@@ -50,6 +43,25 @@ class DeleteTv:
                 )
 
         log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
+
+    def clean_orphan_files(self):
+        now = time()
+        action = 'DELETE'
+        if self.config.dryrun:
+            action = 'DRYRUN'
+
+        with os.scandir(self.config.fsTvPath) as entries:
+            for entry in entries:
+                if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
+                    log.info(f"{action}] orphan '{entry.name}'")
+                    if not self.config.dryrun:
+                        os.remove(entry)
+                elif entry.is_dir():
+                    with os.scandir(entry) as subfiles:
+                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400:
+                            log.info(f"{action} orphan dir '{entry.name}'")
+                            if not self.config.dryrun:
+                                os.rmdir(entry)
 
     def delete_unwatched(self):
         today = round(datetime.now().timestamp())

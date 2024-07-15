@@ -8,6 +8,7 @@ import logging as log
 from downloadstation import DownloadStation
 from filestation import FileStation
 from tgram import Telegram
+from time import time
 
 class DeleteMovies:
     def __init__(self, config):
@@ -78,6 +79,25 @@ class DeleteMovies:
 
         log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
     
+
+    def clean_orphan_files(self):
+        now = time()
+        action = 'DELETE'
+        if self.config.dryrun:
+            action = 'DRYRUN'
+
+        with os.scandir(self.config.fsMoviePath) as entries:
+            for entry in entries:
+                if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
+                    log.info(f"{action}] orphan '{entry.name}'")
+                    if not self.config.dryrun:
+                        os.remove(entry)
+                elif entry.is_dir():
+                    with os.scandir(entry) as subfiles:
+                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400:
+                            log.info(f"{action} orphan dir '{entry.name}'")
+                            if not self.config.dryrun:
+                                os.rmdir(entry)
 
     def __purge(self, movie):
         deletesize = 0
