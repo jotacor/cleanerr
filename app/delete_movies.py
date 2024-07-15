@@ -9,6 +9,8 @@ from downloadstation import DownloadStation
 from filestation import FileStation
 from tgram import Telegram
 from time import time
+import shutil
+
 
 class DeleteMovies:
     def __init__(self, config):
@@ -98,7 +100,7 @@ class DeleteMovies:
                         if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
                             log.info(f"{action} orphan dir '{entry.name}'")
                             if not self.config.dryrun:
-                                os.rmdir(entry)
+                                shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
 
     def __purge(self, movie):
