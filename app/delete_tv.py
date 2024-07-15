@@ -59,7 +59,7 @@ class DeleteTv:
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
-                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400:
+                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
                             log.info(f"{action} orphan dir '{entry.name}'")
                             if not self.config.dryrun:
                                 os.rmdir(entry)

@@ -89,13 +89,13 @@ class DeleteMovies:
         with os.scandir(self.config.fsMoviePath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
-                    log.info(f"{action}] orphan '{entry.name}'")
+                    log.info(f"{action} orphan '{entry.name}'")
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
-                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400:
+                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
                             log.info(f"{action} orphan dir '{entry.name}'")
                             if not self.config.dryrun:
                                 os.rmdir(entry)
