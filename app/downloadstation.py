@@ -14,9 +14,12 @@ class DownloadStation:
             ds_tasks.update({task['title']: task['id']})
 
         log.info(f"Deleting '{taskname}' from DownloadStation")
-        r = self.ds.delete_task(ds_tasks[taskname])
-        if r['data'][0]['error'] != 0:
+        if taskname not in ds_tasks:
             log.warning(f"Task '{taskname}' not found in DownloadStation")
+        else:
+            r = self.ds.delete_task(ds_tasks[taskname])
+            if r['data'][0]['error'] != 0:
+                log.warning(f"Task '{taskname}' not found in DownloadStation")
 
     def delete_no_tracked(self):
         all_tasks = self.ds.tasks_list()
