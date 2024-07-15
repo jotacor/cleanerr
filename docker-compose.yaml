@@ -5,11 +5,31 @@ services:
     container_name: cleanerr
     network_mode: bridge
     restart: no
+    volumes:
+    - /volume1/video/downloads:/video/downloads
     environment:
-      - LOG_LEVEL=INFO
-      - RADARR=http://localhost:7878
-      - RADARR_API=radarr-api-key
-      - DS_IP=localhost
-      - DS_PORT=8000
-      - DS_USER=dstation-user
-      - DS_PASSWORD=dstation-passwd
+    - LOG_LEVEL=INFO
+    - DS_IP=localhost
+    - DS_PORT=8000
+    - DS_USER=user
+    - DS_PASSWORD=passwd
+    - FS_PORT=5000
+    - FS_MOVIE_PATH=/video/downloads/movies
+    - FS_TV_PATH=/video/downloads/tvseries
+    - RADARR=http://localhost:7878
+    - RADARR_API=abcdefghijklmnopqrstuvwxyz987654
+    - TAUTULLI=http://localhost:8181
+    - TAUTULLI_API=abcdefghijklmnopqrstuvwxyz987654
+    - TAUTULLI_MOVIE_SECTIONID=1
+    - TAUTULLI_TV_SECTIONID=2
+    - SONARR=http://localhost:8989
+    - SONARR_API=abcdefghijklmnopqrstuvwxyz987654
+    - OVERSEERR=http://localhost:5055
+    - OVERSEERR_API=abcdefghijklmnopqrstuvwxyz987654=
+    - RADARR_PROTECTED_TAGS=0
+    - SONARR_PROTECTED_TAGS=0
+    - TAUTULLI_NUM_ROWS=3000
+    - DAYS_SINCE_LAST_WATCH=500
+    - DAYS_WITHOUT_WATCH=60
+    - TELEGRAM_TOKEN="token"
+    - TELEGRAM_CHATID="chat_id"
