@@ -26,6 +26,6 @@ class DownloadStation:
         all_tasks = self.ds.tasks_list()
         for task in all_tasks['data']['tasks']:
             if task['status'] == 'error' or ('tracker' in task['additional'] and not any([status for status in task['additional']['tracker'] if status['status'] == 'Success'])):
-                log.debug(f"DELETED DS TRACKER: '{task['title']}'")
+                log.info(f"DELETED DS TRACKER: '{task['title']}'")
                 if not self.config.dryrun:
                     self.ds.delete_task(task['id'])

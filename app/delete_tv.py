@@ -43,7 +43,7 @@ class DeleteTv:
                     + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
                 )
 
-        log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
+        log.info(f"Unmonitored no-file: {totalsize:.2f} GB")
 
     def clean_orphan_files(self):
         now = time()

@@ -79,7 +79,7 @@ class DeleteMovies:
                 DownloadStation(self.config).delete_task(filename)
                 FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{filename}")
 
-        log.info(f"Unmonitored nofile: {totalsize:.2f} GB")
+        log.info(f"Unmonitored no-file: {totalsize:.2f} GB")
     
 
     def clean_orphan_files(self):
