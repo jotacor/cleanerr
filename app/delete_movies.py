@@ -118,7 +118,7 @@ class DeleteMovies:
                     "tmdb://", 1
                 )[1]
         except Exception as e:
-            log.warn(
+            log.warning(
                 f"{movie['title']}: Unexpected GUID metadata from Tautulli. Please refresh your library's metadata in Plex. Using less-accurate 'search mode' for this title. Error message: "
                 + str(e)
             )

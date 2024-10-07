@@ -54,14 +54,14 @@ class DeleteTv:
         with os.scandir(self.config.fsTvPath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
-                    log.info(f"{action} orphan '{entry.name}'")
+                    log.info(f"{action} ORPHAN: '{entry.name}'")
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
                         if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
-                            log.info(f"{action} orphan dir '{entry.name}'")
+                            log.info(f"{action} ORPHAN DIR: '{entry.name}'")
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
@@ -111,7 +111,7 @@ class DeleteTv:
             if guids:
                 tvdbid = [guid for guid in guids if guid.startswith("tvdb://")][0].split("tvdb://", 1)[1]
         except Exception as e:
-            log.warn(
+            log.warning(
                 f"{series['title']}: Unexpected GUID metadata from Tautulli. Please refresh your library's metadata in Plex. Using less-accurate 'search mode' for this title. Error message: "
                 + str(e)
             )
@@ -168,7 +168,7 @@ class DeleteTv:
                 action = "DRY RUN"
 
             deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-            log.info(f"{action}: {series["title"]} | {deletesize:.2f} GB  | Radarr ID: {sonarr["id"]}  | TMDB ID: {sonarr["tvdbId"]}")
+            log.info(f"{action}: {series["title"]} | {deletesize:.2f} GB  | Sonarr ID: {sonarr["id"]}  | TVDB ID: {sonarr["tvdbId"]}")
 
         except StopIteration:
             pass

@@ -8,7 +8,7 @@ class FileStation:
         self.fs = FS(config.dsIp, config.fsPort, config.dsUser, config.dsPassword, secure=False, cert_verify=False, dsm_version=7, otp_code=None, interactive_output=False, debug=False)
 
     def delete_file(self, filename):
-        log.info(f"Deleting '{filename}' from FileStation")
+        log.debug(f"DELETE FS: '{filename}'")
         self.__delete(filename)
 
     def delete_file_search(self, directory, file):
@@ -27,7 +27,7 @@ class FileStation:
         for file in filelist['data']['files']:
             if file['isdir'] and file['additional']['size'] <= 12:
                 name = f"{directory}/{file['name']}"
-                log.info(f"Deleting empty directory '{name}' from FileStation")
+                log.debug(f"DELETE FS EMPTY DIR: '{name}'")
                 self.__delete(f"{name}")
     
     def __delete(self, name):
