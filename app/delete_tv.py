@@ -130,7 +130,7 @@ class DeleteTv:
                     .first()
                 )
 
-            if sonarr["tvdbId"] in self.protected:
+            if sonarr["tvdbId"] in self.protected or sonarr["status"] == 'continuing':
                 return deletesize
 
             if any(e in self.protected_tags for e in sonarr["tags"]):
