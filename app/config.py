@@ -23,6 +23,7 @@ class Config:
         self.tautulliMovieSectionID = os.getenv("TAUTULLI_MOVIE_SECTIONID", "1")
         self.tautulliTvSectionID = os.getenv("TAUTULLI_TV_SECTIONID", "2")
         self.tautulliNumRows = os.getenv("TAUTULLI_NUM_ROWS", "3000")
+        self.daysSinceLastWatch = int(os.getenv("DAYS_SINCE_LAST_WATCH", 30))
         self.daysSinceAdded = int(os.getenv("DAYS_SINCE_ADDED", 365))
         self.dryrun = os.getenv("DRY_RUN", None) != None
         self.radarrHost = os.getenv("RADARR", "http://localhost:7878")

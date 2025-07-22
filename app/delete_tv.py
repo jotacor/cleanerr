@@ -76,16 +76,13 @@ class DeleteTv:
 
         try:
             for series in shows["response"]["data"]["data"]:
-                # last_played_removed = 0
-                # if series["last_played"]:
-                #     lp = round((today - int(series["last_played"])) / 86400)
-                #     if lp > self.config.daysSinceLastWatch and (last_played_removed := self.__purge(series)):
-                #         totalsize = totalsize + last_played_removed
-                # Delete series too old even if played or not
-                if self.config.daysSinceAdded > 0 and series["added_at"]:
+                lp, aa = 0, 0
+                if series["last_played"]:
+                    lp = round((today - int(series["last_played"])) / 86400)
+                if series["added_at"]:
                     aa = round((today - int(series["added_at"])) / 86400)
-                    if aa > self.config.daysSinceAdded:
-                        totalsize = totalsize + self.__purge(series)
+                if (not series["last_played"] or lp > self.config.daysSinceLastWatch) and aa > self.config.daysSinceAdded:
+                    totalsize = totalsize + self.__purge(series)
         except Exception as e:
             log.error(
                 "There was a problem connecting to Tautulli/Sonarr/Overseerr.\
