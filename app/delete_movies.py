@@ -57,7 +57,7 @@ class DeleteMovies:
             )
             sys.exit(1)
 
-        log.info(f"Movies unwatched: {totalsize:.2f} GB")
+        log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB")
 
 
     # Cleans when it is deleted from Plex directly
@@ -169,7 +169,11 @@ class DeleteMovies:
                 action = "DRY RUN"
 
             deletesize = int(movie["file_size"]) / 1073741824
-            log.info(f"{action}: {movie["title"]} | {deletesize:.2f} GB  | Radarr ID: {radarr["id"]}  | TMDB ID: {radarr["tmdbId"]}")
+
+            info_str = f"{action}: {movie['title'][:40]}"
+            if (padding := 50 - len(info_str)) < 1:
+                padding = 1
+            log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
         except StopIteration:
             pass

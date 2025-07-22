@@ -91,7 +91,7 @@ class DeleteTv:
             )
             sys.exit(1)
 
-        log.info(f"TV unwatched: {totalsize:.2f} GB")
+        log.info(f"Total TV {'_' * 41}{totalsize:7.2f} GB")
 
     # TODO: Delete from FS and DS
     def __purge(self, series):
@@ -165,7 +165,11 @@ class DeleteTv:
                 action = "DRY RUN"
 
             deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-            log.info(f"{action}: {series["title"]} | {deletesize:.2f} GB  | Sonarr ID: {sonarr["id"]}  | TVDB ID: {sonarr["tvdbId"]}")
+            
+            info_str = f"{action}: {series['title'][:40]}"
+            if (padding := 50 - len(info_str)) < 1:
+                padding = 1
+            log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
         except StopIteration:
             pass
