@@ -43,16 +43,16 @@ class DeleteMovies:
 
         try:
             for movie in movies["response"]["data"]["data"]:
-                if movie["last_played"]:
-                    lp = round((today - int(movie["last_played"])) / 86400)
-                    if lp > self.config.daysSinceLastWatch:
+                # last_played_removed = 0
+                # if movie["last_played"]:
+                #     lp = round((today - int(movie["last_played"])) / 86400)
+                #     if lp > self.config.daysSinceLastWatch  and (last_played_removed := self.__purge(movie)):
+                #         totalsize = totalsize + last_played_removed
+                # Delete movies too old even if played or not
+                if self.config.daysSinceAdded > 0 and movie["added_at"]:
+                    aa = round((today - int(movie["added_at"])) / 86400)
+                    if aa > self.config.daysSinceAdded:
                         totalsize = totalsize + self.__purge(movie)
-                else:
-                    if self.config.daysWithoutWatch > 0:
-                        if movie["added_at"] and movie["play_count"] is None:
-                            aa = round((today - int(movie["added_at"])) / 86400)
-                            if aa > self.config.daysWithoutWatch:
-                                totalsize = totalsize + self.__purge(movie)
         except Exception as e:
             log.error(
                 "There was a problem connecting to Tautulli/Radarr/Overseerr. Please double-check that your connection settings and API keys are correct.\n\nError message:\n"
