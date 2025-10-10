@@ -47,9 +47,7 @@ class DeleteTv:
 
     def clean_orphan_files(self):
         now = time()
-        action = 'DELETE'
-        if self.config.dryrun:
-            action = 'DRYRUN'
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
 
         with os.scandir(self.config.fsTvPath) as entries:
             for entry in entries:
@@ -127,53 +125,111 @@ class DeleteTv:
                     .first()
                 )
 
-            if sonarr["tvdbId"] in self.protected or sonarr["status"] == 'continuing':
+            if sonarr["tvdbId"] in self.protected or any(e in self.protected_tags for e in sonarr["tags"]):
                 return deletesize
 
-            if any(e in self.protected_tags for e in sonarr["tags"]):
-                return deletesize
+            if sonarr["status"] == 'continuing':
+                return self.__delete_previous_seasons(sonarr, series["title"])
 
-            if not self.config.dryrun:
-                response = requests.delete(
-                    f"{self.config.sonarrHost}/api/v3/series/"
-                    + str(sonarr["id"])
-                    + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
-                )
-
-            try:
-                if not self.config.dryrun and self.config.overseerrAPIkey is not None:
-                    headers = {"X-Api-Key": f"{self.config.overseerrAPIkey}"}
-                    o = requests.get(
-                        f"{self.config.overseerrHost}/api/v1/search/?query=tvdb%3A"
-                        + str(sonarr["tvdbId"]),
-                        headers=headers,
-                    )
-                    overseerrid = jq.compile(
-                        "[select (.results[].mediainfo.tvdbId = "
-                        + str(sonarr["tvdbId"])
-                        + ")][0].results[0].mediaInfo.id"
-                    ).input(o.json())
-                    o = requests.delete(
-                        f"{self.config.overseerrHost}/api/v1/media/{overseerrid.text()}",
-                        headers=headers,
-                    )
-            except Exception as e:
-                log.error("Overseerr API error. Error message: " + str(e))
-
-            action = "DELETED"
-            if self.config.dryrun:
-                action = "DRY RUN"
-
-            deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-            
-            info_str = f"{action}: {series['title'][:40]}"
-            if (padding := 50 - len(info_str)) < 1:
-                padding = 1
-            log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+            if sonarr["status"] == 'ended':
+                return self.__delete_ended(sonarr, series["title"])
 
         except StopIteration:
             pass
         except Exception as e:
-            log.error(f"{series["title"]}: {e})")
+            log.error(f"{series['title']}: {e}")
+
+        return deletesize
+
+
+    def __delete_ended(self, sonarr, title):
+        if not self.config.dryrun:
+            response = requests.delete(
+                f"{self.config.sonarrHost}/api/v3/series/"
+                + str(sonarr["id"])
+                + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
+            )
+
+        try:
+            if not self.config.dryrun and self.config.overseerrAPIkey is not None:
+                headers = {"X-Api-Key": f"{self.config.overseerrAPIkey}"}
+                o = requests.get(
+                    f"{self.config.overseerrHost}/api/v1/search/?query=tvdb%3A"
+                    + str(sonarr["tvdbId"]),
+                    headers=headers,
+                )
+                overseerrid = jq.compile(
+                    "[select (.results[].mediainfo.tvdbId = "
+                    + str(sonarr["tvdbId"])
+                    + ")][0].results[0].mediaInfo.id"
+                ).input(o.json())
+                o = requests.delete(
+                    f"{self.config.overseerrHost}/api/v1/media/{overseerrid.text()}",
+                    headers=headers,
+                )
+        except Exception as e:
+            log.error("Overseerr API error. Error message: " + str(e))
+
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
+
+        deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
+        
+        info_str = f"{action}: {title[:40]}"
+        if (padding := 50 - len(info_str)) < 1:
+            padding = 1
+        log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+        
+        return deletesize
+
+
+    def __delete_previous_seasons(self, sonarr, title):
+        deletesize = 0
+        seasons = [
+            season
+            for season in sonarr.get("seasons", [])
+            if season.get("seasonNumber", 0) > 0 and season.get("statistics", {}).get("episodeFileCount", 0) > 0
+        ]
+
+        if len(seasons) <= 1:
+            return deletesize
+
+        latest_season = max(season["seasonNumber"] for season in seasons)
+        seasons_to_delete = [season["seasonNumber"] for season in seasons if season["seasonNumber"] < latest_season]
+
+        if not seasons_to_delete:
+            return deletesize
+
+        try:
+            episodefiles = requests.get(
+                f"{self.config.sonarrHost}/api/v3/episodefile?seriesId={sonarr['id']}&apiKey={self.config.sonarrAPIkey}"
+            ).json()
+        except Exception as e:
+            log.error(f"{title}: Error retrieving episode files: {e}")
+            return deletesize
+
+        episodefiles_to_delete = [
+            episode for episode in episodefiles if episode.get("seasonNumber") in seasons_to_delete
+        ]
+
+        if not episodefiles_to_delete:
+            return deletesize
+
+        if not self.config.dryrun:
+            for episodefile in episodefiles_to_delete:
+                try:
+                    requests.delete(
+                        f"{self.config.sonarrHost}/api/v3/episodefile/{episodefile['id']}?apiKey={self.config.sonarrAPIkey}"
+                    )
+                except Exception as e:
+                    log.error(f"{title}: Error deleting episode file {episodefile['id']}: {e}")
+
+        total_bytes = sum(file.get("size", 0) for file in episodefiles_to_delete)
+        deletesize = total_bytes / 1073741824
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
+        seasons_str = ", S".join(str(season) for season in sorted(seasons_to_delete))
+        info_str = f"{action}: {title[:40]} S{seasons_str}"
+        if (padding := 50 - len(info_str)) < 1:
+            padding = 1
+        log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
         return deletesize

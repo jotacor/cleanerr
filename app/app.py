@@ -11,7 +11,7 @@ import os
 
 # TODO: unify DeleteTv and DeleteMovies
 def app():
-    log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'WARN'), stream=sys.stdout)
+    log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
     log.info("### Starting...")
     config = Config()
 
