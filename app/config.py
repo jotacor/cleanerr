@@ -35,9 +35,6 @@ class Config:
         self.telegram_chat_id = os.getenv("TELEGRAM_CHATID", None)
         self.telegram_token = os.getenv("TELEGRAM_TOKEN", None)
 
-        if self.dryrun:
-            log.info("DRY_RUN enabled!")
-
     def check(self, *keys):
         retval = True
         for k in keys:

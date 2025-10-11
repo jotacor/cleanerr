@@ -34,6 +34,7 @@ class DeleteMovies:
             self.protected_tags = []
 
     def delete_unwatched(self):
+        log.info("# UNWATCHED")
         today = round(datetime.now().timestamp())
         totalsize = 0
         r = requests.get(
@@ -57,11 +58,11 @@ class DeleteMovies:
             )
             sys.exit(1)
 
-        log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB")
+        totalsize and log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB")
 
 
-    # Cleans when it is deleted from Plex directly
     def clean_unmonitored_nofile(self):
+        log.info("# UNMONITORED & NOFILES")
         totalsize = 0
         action = "DRY RUN" if self.config.dryrun else "DELETED"
         movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
@@ -88,6 +89,7 @@ class DeleteMovies:
 
 
     def clean_orphan_files(self):
+        log.info("# ORPHANS")
         now = time()
         action = "DRY RUN" if self.config.dryrun else "DELETED"
 

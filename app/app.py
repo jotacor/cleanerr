@@ -12,34 +12,36 @@ import os
 # TODO: unify DeleteTv and DeleteMovies
 def app():
     log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
-    log.info("### Starting...")
     config = Config()
-
-    log.info("# DELETE SHOWS")
+    config.dryrun and log.info("DRY_RUN enabled!")
+    
+    log.info("### STARTING")
+    
+    log.info("## SHOWS")
     dtu = DeleteTv(config)
     dtu.delete_unwatched()
     dtu.clean_unmonitored_nofile()
     dtu.clean_orphan_files()
     pass
 
-    log.info("# DELETE MOVIES")
+    log.info("## MOVIES")
     dmu = DeleteMovies(config)
     dmu.delete_unwatched()
     dmu.clean_unmonitored_nofile()
     dmu.clean_orphan_files()
     pass
 
-    log.info("# CLEAN DOWNLOAD STATION")
+    log.info("## CLEAN DOWNLOAD STATION")
     ds = DownloadStation(config)
     ds.delete_no_tracked()
     pass
 
-    log.info("# CLEAN FILESYSTEM")
+    log.info("## CLEAN FILESYSTEM")
     fs = FileStation(config)
     fs.delete_empty_dirs(config.fsTvPath)
     pass
 
-    log.info("### Finishing...")
+    log.info("### ENDING")
 
 if __name__ == "__main__":
     app()

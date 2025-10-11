@@ -33,6 +33,7 @@ class DeleteTv:
             self.protected_tags = []
 
     def clean_unmonitored_nofile(self):
+        log.info("# UNMONITORED & NOFILES")
         totalsize = 0
         action = "DRY RUN" if self.config.dryrun else "DELETED"
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
@@ -53,6 +54,7 @@ class DeleteTv:
         totalsize and log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB")
 
     def clean_orphan_files(self):
+        log.info("# ORPHANS")
         now = time()
         action = "DRY RUN" if self.config.dryrun else "DELETED"
 
@@ -72,6 +74,7 @@ class DeleteTv:
                                 DownloadStation(self.config).delete_task(entry.name)
 
     def delete_unwatched(self):
+        log.info("# UNWATCHED")
         today = round(datetime.now().timestamp())
         totalsize = 0
         tau = requests.get(
@@ -96,7 +99,7 @@ class DeleteTv:
             )
             sys.exit(1)
 
-        log.info(f"Total Shows {'_' * 41}{totalsize:7.2f} GB")
+        totalsize and log.info(f"Total Shows {'_' * 38}{totalsize:7.2f} GB")
 
     # TODO: Delete from FS and DS
     def __purge(self, series):
