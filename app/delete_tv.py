@@ -35,7 +35,6 @@ class DeleteTv:
     def clean_unmonitored_nofile(self):
         log.info("# UNMONITORED & NOFILES")
         totalsize = 0
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
         for serie in series.json():
             if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:
@@ -46,7 +45,7 @@ class DeleteTv:
                 )
                 deletesize = int(serie["file_size"]) / 1073741824
                 totalsize += deletesize
-                info_str = f"{action}: {serie['title'][:40]}"
+                info_str = f"{serie['title'][:40]}"
                 if (padding := 50 - len(info_str)) < 1:
                     padding = 1
                 log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
@@ -56,19 +55,18 @@ class DeleteTv:
     def clean_orphan_files(self):
         log.info("# ORPHANS")
         now = time()
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
 
         with os.scandir(self.config.fsTvPath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
-                    log.info(f"{action} ORPHAN: '{entry.name}'")
+                    log.info(entry.name)
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
                         if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
-                            log.info(f"{action} ORPHAN DIR: '{entry.name}'")
+                            log.info(entry.name)
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
@@ -180,11 +178,9 @@ class DeleteTv:
         except Exception as e:
             log.error("Overseerr API error. Error message: " + str(e))
 
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
 
         deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-        
-        info_str = f"{action}: {title[:40]}"
+        info_str = f"{title[:40]}"
         if (padding := 50 - len(info_str)) < 1:
             padding = 1
         log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
@@ -235,9 +231,8 @@ class DeleteTv:
 
         total_bytes = sum(file.get("size", 0) for file in episodefiles_to_delete)
         deletesize = total_bytes / 1073741824
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
         seasons_str = ", S".join(str(season) for season in sorted(seasons_to_delete))
-        info_str = f"{action}: {title[:40]} S{seasons_str}"
+        info_str = f"{title[:40]} S{seasons_str}"
         if (padding := 50 - len(info_str)) < 1:
             padding = 1
         log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")

@@ -64,7 +64,6 @@ class DeleteMovies:
     def clean_unmonitored_nofile(self):
         log.info("# UNMONITORED & NOFILES")
         totalsize = 0
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
         movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
         for movie in movies.json():
             if not movie['hasFile'] and not movie['monitored'] and not self.config.dryrun:
@@ -80,7 +79,7 @@ class DeleteMovies:
                 
                 deletesize = int(movie["file_size"]) / 1073741824
                 totalsize += deletesize
-                info_str = f"{action}: {movie['title'][:40]}"
+                info_str = f"{movie['title'][:40]}"
                 if (padding := 50 - len(info_str)) < 1:
                     padding = 1
                 log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
@@ -91,19 +90,18 @@ class DeleteMovies:
     def clean_orphan_files(self):
         log.info("# ORPHANS")
         now = time()
-        action = "DRY RUN" if self.config.dryrun else "DELETED"
 
         with os.scandir(self.config.fsMoviePath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
-                    log.info(f"{action} orphan '{entry.name}'")
+                    log.info(entry.name)
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
                         if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
-                            log.info(f"{action} orphan dir '{entry.name}'")
+                            log.info(entry.name)
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
@@ -172,9 +170,8 @@ class DeleteMovies:
             except Exception as e:
                 log.error("Unable to connect to overseerr. Error message: " + str(e))
 
-            action = "DRY RUN" if self.config.dryrun else "DELETED"
             deletesize = int(movie["file_size"]) / 1073741824
-            info_str = f"{action}: {movie['title'][:40]}"
+            info_str = f"{movie['title'][:40]}"
             if (padding := 50 - len(info_str)) < 1:
                 padding = 1
             log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")

@@ -13,7 +13,7 @@ import os
 def app():
     log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
     config = Config()
-    config.dryrun and log.info("DRY_RUN enabled!")
+    config.dryrun and log.info("##### DRY RUN ENABLED #####")
     
     log.info("### STARTING")
     
