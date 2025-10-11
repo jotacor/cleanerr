@@ -14,11 +14,11 @@ class DownloadStation:
             ds_tasks.update({task['title']: task['id']})
 
         if taskname not in ds_tasks:
-            log.warning(f"DS NOT FOUND: '{taskname}'")
+            log.debug(f"DS NOT FOUND: '{taskname}'")
         else:
             r = self.ds.delete_task(ds_tasks[taskname])
             if r['data'][0]['error'] != 0:
-                log.warning(f"DS NOT FOUND: '{taskname}'")
+                log.debug(f"DS NOT FOUND: '{taskname}'")
             else:
                 log.debug(f"DELETED DS: '{taskname}'")
 

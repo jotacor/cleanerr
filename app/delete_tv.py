@@ -99,7 +99,6 @@ class DeleteTv:
 
         totalsize and log.info(f"Total Shows {'_' * 38}{totalsize:7.2f} GB")
 
-    # TODO: Delete from FS and DS
     def __purge(self, series):
         deletesize = 0
         tvdbid = None
@@ -228,6 +227,8 @@ class DeleteTv:
                     )
                 except Exception as e:
                     log.error(f"{title}: Error deleting episode file {episodefile['id']}: {e}")
+            
+            self.__unmonitor_previous_seasons(sonarr, title, seasons_to_delete)
 
         total_bytes = sum(file.get("size", 0) for file in episodefiles_to_delete)
         deletesize = total_bytes / 1073741824
@@ -238,3 +239,32 @@ class DeleteTv:
         log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
         return deletesize
+
+
+    def __unmonitor_previous_seasons(self, sonarr, title, seasons):
+        updated_seasons = []
+        for season in sonarr.get("seasons", []):
+            season_copy = {
+                key: value
+                for key, value in season.items()
+                if key != "statistics"
+            }
+            if season_copy.get("seasonNumber") in seasons:
+                season_copy["monitored"] = False
+            updated_seasons.append(season_copy)
+
+        excluded_keys = {"statistics", "lastInfoSync", "previousAiring", "nextAiring"}
+        series_update = {
+            key: value
+            for key, value in sonarr.items()
+            if key not in excluded_keys
+        }
+        series_update["seasons"] = updated_seasons
+
+        try:
+            requests.put(
+                f"{self.config.sonarrHost}/api/v3/series/{sonarr['id']}?apiKey={self.config.sonarrAPIkey}",
+                json=series_update,
+            )
+        except Exception as e:
+            log.error(f"{title}: Error updating Sonarr series to unmonitor seasons {seasons}: {e}")
