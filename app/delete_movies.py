@@ -63,6 +63,7 @@ class DeleteMovies:
     # Cleans when it is deleted from Plex directly
     def clean_unmonitored_nofile(self):
         totalsize = 0
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
         movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
         for movie in movies.json():
             if not movie['hasFile'] and not movie['monitored'] and not self.config.dryrun:
@@ -75,15 +76,20 @@ class DeleteMovies:
                 )
                 DownloadStation(self.config).delete_task(filename)
                 FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{filename}")
+                
+                deletesize = int(movie["file_size"]) / 1073741824
+                totalsize += deletesize
+                info_str = f"{action}: {movie['title'][:40]}"
+                if (padding := 50 - len(info_str)) < 1:
+                    padding = 1
+                log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
-        log.info(f"Unmonitored no-file: {totalsize:.2f} GB")
-    
+        totalsize and log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB")
+
 
     def clean_orphan_files(self):
         now = time()
-        action = 'DELETE'
-        if self.config.dryrun:
-            action = 'DRYRUN'
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
 
         with os.scandir(self.config.fsMoviePath) as entries:
             for entry in entries:
@@ -164,12 +170,8 @@ class DeleteMovies:
             except Exception as e:
                 log.error("Unable to connect to overseerr. Error message: " + str(e))
 
-            action = "DELETED"
-            if self.config.dryrun:
-                action = "DRY RUN"
-
+            action = "DRY RUN" if self.config.dryrun else "DELETED"
             deletesize = int(movie["file_size"]) / 1073741824
-
             info_str = f"{action}: {movie['title'][:40]}"
             if (padding := 50 - len(info_str)) < 1:
                 padding = 1

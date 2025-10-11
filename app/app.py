@@ -29,12 +29,12 @@ def app():
     dmu.clean_orphan_files()
     pass
 
-    log.info("# DELETE DS NO TRACK")
+    log.info("# CLEAN DOWNLOAD STATION")
     ds = DownloadStation(config)
     ds.delete_no_tracked()
     pass
 
-    log.info("# DELETE FS EMPTY DIR")
+    log.info("# CLEAN FILESYSTEM")
     fs = FileStation(config)
     fs.delete_empty_dirs(config.fsTvPath)
     pass

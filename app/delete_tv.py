@@ -34,6 +34,7 @@ class DeleteTv:
 
     def clean_unmonitored_nofile(self):
         totalsize = 0
+        action = "DRY RUN" if self.config.dryrun else "DELETED"
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
         for serie in series.json():
             if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:
@@ -42,8 +43,14 @@ class DeleteTv:
                     + str(serie["id"])
                     + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
                 )
+                deletesize = int(serie["file_size"]) / 1073741824
+                totalsize += deletesize
+                info_str = f"{action}: {serie['title'][:40]}"
+                if (padding := 50 - len(info_str)) < 1:
+                    padding = 1
+                log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
-        log.info(f"Unmonitored no-file: {totalsize:.2f} GB")
+        totalsize and log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB")
 
     def clean_orphan_files(self):
         now = time()
@@ -89,7 +96,7 @@ class DeleteTv:
             )
             sys.exit(1)
 
-        log.info(f"Total TV {'_' * 41}{totalsize:7.2f} GB")
+        log.info(f"Total Shows {'_' * 41}{totalsize:7.2f} GB")
 
     # TODO: Delete from FS and DS
     def __purge(self, series):
