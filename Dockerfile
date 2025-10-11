@@ -1,4 +1,4 @@
-FROM python:3-alpine
+FROM python:3.12-alpine
 
 ENV PIPENV_VENV_IN_PROJECT=1
 
