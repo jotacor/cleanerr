@@ -15,6 +15,9 @@ class Config:
         self.fsTvPath = os.getenv("FS_TV_PATH", "")
         self.dsUser = os.getenv("DS_USER")
         self.dsPassword = os.getenv("DS_PASSWORD")
+
+        self.filesHardlinks = os.getenv("FILES_HARDLINKS", 2)
+        self.filesMinDays = os.getenv("FILES_MIN_DAYS", 5)
         
         self.tautulliHost = os.getenv("TAUTULLI", "http://localhost:8181")
         self.tautulliAPIkey = os.getenv("TAUTULLI_API")

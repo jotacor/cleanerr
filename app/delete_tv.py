@@ -58,14 +58,14 @@ class DeleteTv:
 
         with os.scandir(self.config.fsTvPath) as entries:
             for entry in entries:
-                if entry.is_file() and os.stat(entry).st_nlink < 2 and now - os.stat(entry).st_mtime > 4 * 86400:
+                if entry.is_file() and os.stat(entry).st_nlink < self.config.filesHardlinks and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400:
                     log.info(entry.name)
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
-                        if all([os.stat(subfile).st_nlink < 2 for subfile in subfiles]) and now - os.stat(entry).st_mtime > 4 * 86400 and 'eaDir' not in entry.name:
+                        if all([os.stat(subfile).st_nlink < self.config.filesHardlinks for subfile in subfiles]) and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400 and 'eaDir' not in entry.name:
                             log.info(entry.name)
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
