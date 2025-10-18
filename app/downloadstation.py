@@ -25,7 +25,21 @@ class DownloadStation:
     def delete_no_tracked(self):
         all_tasks = self.ds.tasks_list()
         for task in all_tasks['data']['tasks']:
-            if task['status'] == 'error' or ('tracker' in task['additional'] and not any([status for status in task['additional']['tracker'] if status['status'] in ['Success', '', 'Could not connect to tracker']])):
+            has_tracker_info = 'tracker' in task['additional']
+            tracker_error = task['status'] == 'error'
+            valid_tracker_status = [
+                'Success',
+                '',
+                'Could not connect to tracker',
+                'Please respect the min interval'
+            ]
+            tracker_statuses = task['additional']['tracker'] if has_tracker_info else []
+
+            tracker_ok = any(
+                valid_status in tracker_statuses for valid_status in valid_tracker_status
+            )
+
+            if tracker_error or (has_tracker_info and not tracker_ok):
                 log.info(f"DELETED DS TRACKER: '{task['title']}'")
                 if not self.config.dryrun:
                     self.ds.delete_task(task['id'])
