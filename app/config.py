@@ -16,8 +16,8 @@ class Config:
         self.dsUser = os.getenv("DS_USER")
         self.dsPassword = os.getenv("DS_PASSWORD")
 
-        self.filesHardlinks = os.getenv("FILES_HARDLINKS", 2)
-        self.filesMinDays = os.getenv("FILES_MIN_DAYS", 5)
+        self.filesHardlinks = int(os.getenv("FILES_HARDLINKS", 2))
+        self.filesMinDays = int(os.getenv("FILES_MIN_DAYS", 5))
         
         self.tautulliHost = os.getenv("TAUTULLI", "http://localhost:8181")
         self.tautulliAPIkey = os.getenv("TAUTULLI_API")
