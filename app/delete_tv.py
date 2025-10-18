@@ -135,7 +135,7 @@ class DeleteTv:
             if sonarr["tvdbId"] in self.protected or any(e in self.protected_tags for e in sonarr["tags"]):
                 return deletesize
 
-            if sonarr["status"] == 'continuing':
+            if sonarr["status"] == 'continuing' and self.config.sonarrDeletePastSeasons:
                 return self.__delete_previous_seasons(sonarr, series["title"])
 
             if sonarr["status"] == 'ended':
