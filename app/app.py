@@ -9,12 +9,11 @@ import logging as log
 import sys
 import os
 
-# TODO: unify DeleteTv and DeleteMovies
 def app():
     # log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
-    log.basicConfig(format='%(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
+    log.basicConfig(format='%(message)s', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
     config = Config()
-    config.dryrun and log.info("##### DRY RUN ENABLED #####")
+    log.info("##### DRY RUN ENABLED #####") if config.dryrun else None
     
     log.info("### STARTING")
     

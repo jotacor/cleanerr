@@ -1,36 +1,29 @@
-import os
-import requests
-from datetime import datetime
 import json
-import jq
-import sys
-import logging as log
-from downloadstation import DownloadStation
-from filestation import FileStation
-from tgram import Telegram
-from time import time
+import os
 import shutil
+import logging as log
+import sys
+from datetime import datetime
 
-class DeleteTv:
+import jq
+import requests
+from downloadstation import DownloadStation
+from time import time
+
+from delete_base import DeleteBase
+
+
+class DeleteTv(DeleteBase):
     def __init__(self, config):
-        self.config = config
-        self.tg = Telegram(config)
+        super().__init__(config)
         if not self.config.check("tautulliAPIkey", "sonarrAPIkey"):
             log.error("Required Tautulli/Sonarr API key not set. Cannot continue.")
             sys.exit(1)
 
         self.config.apicheck(self.config.sonarrHost, self.config.sonarrAPIkey)
-
-        self.protected = []
-        if os.path.exists("./protected"):
-            with open("./protected", "r") as file:
-                while line := file.readline():
-                    self.protected.append(int(line.rstrip()))
-                    
-        try:
-            self.protected_tags = [int(i) for i in self.config.sonarrProtectedTags.split(",")]
-        except Exception as e:
-            self.protected_tags = []
+        tags = requests.get(f"{self.config.sonarrHost}/api/v3/tag?apikey={self.config.sonarrAPIkey}").json()
+        tags_id = {item["label"]: item["id"] for item in tags}
+        self.protected_tags = [tags_id.get(tag_name, -1) for tag_name in self.config.sonarrProtectedTags.split(",")]
 
     def clean_unmonitored_nofile(self):
         log.info("# UNMONITORED & NOFILES")
@@ -45,12 +38,12 @@ class DeleteTv:
                 )
                 deletesize = int(serie["file_size"]) / 1073741824
                 totalsize += deletesize
-                info_str = f"{serie['title'][:40]}"
+                info_str = f"{serie['title'][:40]} ({serie['year']})"
                 if (padding := 50 - len(info_str)) < 1:
                     padding = 1
                 log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
 
-        totalsize and log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB")
+        log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB") if totalsize else None
 
     def clean_orphan_files(self):
         log.info("# ORPHANS")
@@ -97,7 +90,7 @@ class DeleteTv:
             )
             sys.exit(1)
 
-        totalsize and log.info(f"Total Shows {'_' * 38}{totalsize:7.2f} GB")
+        log.info(f"Total Shows {'_' * 38}{totalsize:7.2f} GB") if totalsize else None
 
     def __purge(self, series):
         deletesize = 0
@@ -132,14 +125,14 @@ class DeleteTv:
                     .first()
                 )
 
-            if sonarr["tvdbId"] in self.protected or any(e in self.protected_tags for e in sonarr["tags"]):
+            if any(tag in self.protected_tags for tag in sonarr["tags"]):
                 return deletesize
 
             if sonarr["status"] == 'continuing' and self.config.sonarrDeletePastSeasons:
-                return self.__delete_previous_seasons(sonarr, series["title"])
+                return self.__delete_previous_seasons(sonarr)
 
             if sonarr["status"] == 'ended':
-                return self.__delete_ended(sonarr, series["title"])
+                return self.__delete_ended(sonarr)
 
         except StopIteration:
             pass
@@ -149,9 +142,9 @@ class DeleteTv:
         return deletesize
 
 
-    def __delete_ended(self, sonarr, title):
+    def __delete_ended(self, sonarr):
         if not self.config.dryrun:
-            response = requests.delete(
+            o = requests.delete(
                 f"{self.config.sonarrHost}/api/v3/series/"
                 + str(sonarr["id"])
                 + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
@@ -170,7 +163,7 @@ class DeleteTv:
                     + str(sonarr["tvdbId"])
                     + ")][0].results[0].mediaInfo.id"
                 ).input(o.json())
-                o = requests.delete(
+                requests.delete(
                     f"{self.config.overseerrHost}/api/v1/media/{overseerrid.text()}",
                     headers=headers,
                 )
@@ -179,15 +172,16 @@ class DeleteTv:
 
 
         deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-        info_str = f"{title[:40]}"
-        if (padding := 50 - len(info_str)) < 1:
+        title = self._clean_title(sonarr)
+        if (padding := 50 - len(title)) < 1:
             padding = 1
-        log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+        log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
         
         return deletesize
 
 
-    def __delete_previous_seasons(self, sonarr, title):
+    def __delete_previous_seasons(self, sonarr):
+        title = self._clean_title(sonarr)
         deletesize = 0
         seasons = [
             season
@@ -228,12 +222,12 @@ class DeleteTv:
                 except Exception as e:
                     log.error(f"{title}: Error deleting episode file {episodefile['id']}: {e}")
             
-            self.__unmonitor_previous_seasons(sonarr, title, seasons_to_delete)
+            self.__unmonitor_previous_seasons(sonarr, seasons_to_delete)
 
         total_bytes = sum(file.get("size", 0) for file in episodefiles_to_delete)
         deletesize = total_bytes / 1073741824
         seasons_str = ", S".join(str(season) for season in sorted(seasons_to_delete))
-        info_str = f"{title[:40]} S{seasons_str}"
+        info_str = f"{title} S{seasons_str}"
         if (padding := 50 - len(info_str)) < 1:
             padding = 1
         log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
@@ -241,7 +235,7 @@ class DeleteTv:
         return deletesize
 
 
-    def __unmonitor_previous_seasons(self, sonarr, title, seasons):
+    def __unmonitor_previous_seasons(self, sonarr, seasons):
         updated_seasons = []
         for season in sonarr.get("seasons", []):
             season_copy = {
@@ -267,4 +261,4 @@ class DeleteTv:
                 json=series_update,
             )
         except Exception as e:
-            log.error(f"{title}: Error updating Sonarr series to unmonitor seasons {seasons}: {e}")
+            log.error(f"{sonarr['title']}: Error updating Sonarr series to unmonitor seasons {seasons}: {e}")

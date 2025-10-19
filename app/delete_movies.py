@@ -1,37 +1,30 @@
-import os
-from datetime import datetime
 import json
-import requests
-import jq
+import os
+import shutil
 import sys
+from datetime import datetime
+
+import jq
 import logging as log
+import requests
 from downloadstation import DownloadStation
 from filestation import FileStation
-from tgram import Telegram
 from time import time
-import shutil
+
+from delete_base import DeleteBase
 
 
-class DeleteMovies:
+class DeleteMovies(DeleteBase):
     def __init__(self, config):
-        self.config = config
-        self.tg = Telegram(config)
+        super().__init__(config)
         if not self.config.check("tautulliAPIkey", "radarrAPIkey"):
             log.error("Required Tautulli/Radarr API key not set. Cannot continue.")
             sys.exit(1)
 
         self.config.apicheck(self.config.radarrHost, self.config.radarrAPIkey)
-        
-        self.protected = []
-        if os.path.exists("./protected"):
-            with open("./protected", "r") as file:
-                while line := file.readline():
-                    self.protected.append(int(line.rstrip()))
-
-        try:
-            self.protected_tags = [int(i) for i in self.config.radarrProtectedTags.split(",")]
-        except Exception as e:
-            self.protected_tags = []
+        tags = requests.get(f"{self.config.radarrHost}/api/v3/tag?apikey={self.config.radarrAPIkey}").json()
+        tags_id = {item["label"]: item["id"] for item in tags}
+        self.protected_tags = [tags_id.get(tag_name, -1) for tag_name in self.config.radarrProtectedTags.split(",")]
 
     def delete_unwatched(self):
         log.info("# UNWATCHED")
@@ -58,7 +51,7 @@ class DeleteMovies:
             )
             sys.exit(1)
 
-        totalsize and log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB")
+        log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB") if totalsize else None
 
 
     def clean_unmonitored_nofile(self):
@@ -79,12 +72,12 @@ class DeleteMovies:
                 
                 deletesize = int(movie["file_size"]) / 1073741824
                 totalsize += deletesize
-                info_str = f"{movie['title'][:40]}"
-                if (padding := 50 - len(info_str)) < 1:
+                title = self._clean_title(movie)
+                if (padding := 50 - len(title)) < 1:
                     padding = 1
-                log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+                log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
 
-        totalsize and log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB")
+        log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB") if totalsize else None
 
 
     def clean_orphan_files(self):
@@ -140,10 +133,7 @@ class DeleteMovies:
                     .first()
                 )
 
-            if radarr["tmdbId"] in self.protected:
-                return deletesize
-
-            if any(e in self.protected_tags for e in radarr["tags"]):
+            if any(tags in self.protected_tags for tags in radarr["tags"]):
                 return deletesize
 
             if not self.config.dryrun:
@@ -171,10 +161,10 @@ class DeleteMovies:
                 log.error("Unable to connect to overseerr. Error message: " + str(e))
 
             deletesize = int(movie["file_size"]) / 1073741824
-            info_str = f"{movie['title'][:40]}"
-            if (padding := 50 - len(info_str)) < 1:
+            title = self._clean_title(movie)
+            if (padding := 50 - len(title)) < 1:
                 padding = 1
-            log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+            log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
 
         except StopIteration:
             pass

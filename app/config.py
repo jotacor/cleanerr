@@ -31,10 +31,10 @@ class Config:
         self.dryrun = os.getenv("DRY_RUN", None) != None
         self.radarrHost = os.getenv("RADARR", "http://localhost:7878")
         self.radarrAPIkey = os.getenv("RADARR_API")
-        self.radarrProtectedTags = os.getenv("RADARR_PROTECTED_TAGS")
+        self.radarrProtectedTags = os.getenv("RADARR_PROTECTED_TAGS", "")
         self.sonarrHost = os.getenv("SONARR", "http://localhost:8989")
         self.sonarrAPIkey = os.getenv("SONARR_API")
-        self.sonarrProtectedTags = os.getenv("SONARR_PROTECTED_TAGS")
+        self.sonarrProtectedTags = os.getenv("SONARR_PROTECTED_TAGS", "")
         self.sonarrDeletePastSeasons = True if os.getenv("SONARR_DELETE_PAST_SEASONS") == "True" else False
         self.telegram_chat_id = os.getenv("TELEGRAM_CHATID", None)
         self.telegram_token = os.getenv("TELEGRAM_TOKEN", None)
@@ -69,17 +69,6 @@ class Config:
             sys.exit(1)
 
         return None
-
-    def _get_bool_env(self, name, default=False):
-        value = os.getenv(name)
-        if value is None:
-            return default
-        cleaned = value.strip()
-        if cleaned == "True":
-            return True
-        if cleaned == "False":
-            return False
-        return default
 
     def apicheck_tautulli(self):
         try:
