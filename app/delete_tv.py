@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import logging as log
 import sys
 from datetime import datetime
 
@@ -11,6 +10,8 @@ from downloadstation import DownloadStation
 from time import time
 
 from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 
 class DeleteTv(DeleteBase):

@@ -5,13 +5,14 @@ import sys
 from datetime import datetime
 
 import jq
-import logging as log
 import requests
 from downloadstation import DownloadStation
 from filestation import FileStation
 from time import time
 
 from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 
 class DeleteMovies(DeleteBase):

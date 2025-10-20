@@ -5,13 +5,11 @@ from delete_movies import DeleteMovies
 from delete_tv import DeleteTv
 from downloadstation import DownloadStation
 from filestation import FileStation
-import logging as log
-import sys
-import os
+from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 def app():
-    # log.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%dT%H:%M:%S', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
-    log.basicConfig(format='%(message)s', level=os.getenv('LOG_LEVEL', 'INFO'), stream=sys.stdout)
     config = Config()
     log.info("##### DRY RUN ENABLED #####") if config.dryrun else None
     

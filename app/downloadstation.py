@@ -1,5 +1,8 @@
 from synology_api.downloadstation import DownloadStation as DS
-import logging as log
+
+from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 
 class DownloadStation:
