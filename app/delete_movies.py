@@ -28,7 +28,7 @@ class DeleteMovies(DeleteBase):
         self.protected_tags = [tags_id.get(tag_name, -1) for tag_name in self.config.radarrProtectedTags.split(",")]
 
     def delete_unwatched(self):
-        log.info("# UNWATCHED")
+        self.log("# UNWATCHED")
         today = round(datetime.now().timestamp())
         totalsize = 0
         r = requests.get(
@@ -44,7 +44,7 @@ class DeleteMovies(DeleteBase):
                 if movie["added_at"]:
                     aa = round((today - int(movie["added_at"])) / 86400)
                 if (not movie["last_played"] or lp > self.config.daysSinceLastWatch) and aa > self.config.daysSinceAdded:
-                    totalsize = totalsize + self.__purge(movie)
+                    self.__purge(movie)
         except Exception as e:
             log.error(
                 "There was a problem connecting to Tautulli/Radarr/Overseerr. Please double-check that your connection settings and API keys are correct.\n\nError message:\n"
@@ -52,11 +52,8 @@ class DeleteMovies(DeleteBase):
             )
             sys.exit(1)
 
-        log.info(f"Total Movies {'_' * 37}{totalsize:7.2f} GB") if totalsize else None
-
-
     def clean_unmonitored_nofile(self):
-        log.info("# UNMONITORED & NOFILES")
+        self.log("# UNMONITORED & NOFILES")
         totalsize = 0
         movies = requests.get(f"{self.config.radarrHost}/api/v3/movie?apiKey={self.config.radarrAPIkey}")
         for movie in movies.json():
@@ -71,31 +68,24 @@ class DeleteMovies(DeleteBase):
                 DownloadStation(self.config).delete_task(filename)
                 FileStation(self.config).delete_file(f"{self.config.fsMoviePath}/{filename}")
                 
-                deletesize = int(movie["file_size"]) / 1073741824
-                totalsize += deletesize
-                title = self._clean_title(movie)
-                if (padding := 50 - len(title)) < 1:
-                    padding = 1
-                log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
-
-        log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB") if totalsize else None
+                self.log(movie)
 
 
     def clean_orphan_files(self):
-        log.info("# ORPHANS")
+        self.log("# ORPHANS")
         now = time()
 
         with os.scandir(self.config.fsMoviePath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < self.config.filesHardlinks and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400:
-                    log.info(entry.name)
+                    self.log(entry.name)
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
                         if all([os.stat(subfile).st_nlink < self.config.filesHardlinks for subfile in subfiles]) and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400 and 'eaDir' not in entry.name:
-                            log.info(entry.name)
+                            self.log(entry.name)
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
@@ -161,11 +151,7 @@ class DeleteMovies(DeleteBase):
             except Exception as e:
                 log.error("Unable to connect to overseerr. Error message: " + str(e))
 
-            deletesize = int(movie["file_size"]) / 1073741824
-            title = self._clean_title(movie)
-            if (padding := 50 - len(title)) < 1:
-                padding = 1
-            log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
+            self.log(movie)
 
         except StopIteration:
             pass
