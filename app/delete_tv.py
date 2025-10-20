@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import logging as log
 import sys
 from datetime import datetime
 
@@ -11,6 +10,8 @@ from downloadstation import DownloadStation
 from time import time
 
 from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 
 class DeleteTv(DeleteBase):
@@ -26,8 +27,7 @@ class DeleteTv(DeleteBase):
         self.protected_tags = [tags_id.get(tag_name, -1) for tag_name in self.config.sonarrProtectedTags.split(",")]
 
     def clean_unmonitored_nofile(self):
-        log.info("# UNMONITORED & NOFILES")
-        totalsize = 0
+        self.log("# UNMONITORED & NOFILES")
         series = requests.get(f"{self.config.sonarrHost}/api/v3/series?apiKey={self.config.sonarrAPIkey}")
         for serie in series.json():
             if serie['statistics']['episodeFileCount'] == 0 and not serie['monitored'] and not self.config.dryrun:
@@ -36,38 +36,30 @@ class DeleteTv(DeleteBase):
                     + str(serie["id"])
                     + f"?apiKey={self.config.sonarrAPIkey}&deleteFiles=true"
                 )
-                deletesize = int(serie["file_size"]) / 1073741824
-                totalsize += deletesize
-                info_str = f"{serie['title'][:40]} ({serie['year']})"
-                if (padding := 50 - len(info_str)) < 1:
-                    padding = 1
-                log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
-
-        log.info(f"Total Unmon & No-file: {'_' * 27}{totalsize:.2f} GB") if totalsize else None
+                self.log(serie)
 
     def clean_orphan_files(self):
-        log.info("# ORPHANS")
+        self.log("# ORPHANS")
         now = time()
 
         with os.scandir(self.config.fsTvPath) as entries:
             for entry in entries:
                 if entry.is_file() and os.stat(entry).st_nlink < self.config.filesHardlinks and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400:
-                    log.info(entry.name)
+                    self.log(entry.name)
                     if not self.config.dryrun:
                         os.remove(entry)
                         DownloadStation(self.config).delete_task(entry.name)
                 elif entry.is_dir():
                     with os.scandir(entry) as subfiles:
                         if all([os.stat(subfile).st_nlink < self.config.filesHardlinks for subfile in subfiles]) and now - os.stat(entry).st_mtime > self.config.filesMinDays * 86400 and 'eaDir' not in entry.name:
-                            log.info(entry.name)
+                            self.log(entry.name)
                             if not self.config.dryrun:
                                 shutil.rmtree(entry)
                                 DownloadStation(self.config).delete_task(entry.name)
 
     def delete_unwatched(self):
-        log.info("# UNWATCHED")
+        self.log("# UNWATCHED")
         today = round(datetime.now().timestamp())
-        totalsize = 0
         tau = requests.get(
             f"{self.config.tautulliHost}/api/v2/?apikey={self.config.tautulliAPIkey}&cmd=get_library_media_info&section_id={self.config.tautulliTvSectionID}&length={self.config.tautulliNumRows}&refresh=true"
         )
@@ -81,7 +73,7 @@ class DeleteTv(DeleteBase):
                 if series["added_at"]:
                     aa = round((today - int(series["added_at"])) / 86400)
                 if (not series["last_played"] or lp > self.config.daysSinceLastWatch) and aa > self.config.daysSinceAdded:
-                    totalsize = totalsize + self.__purge(series)
+                    self.__purge(series)
         except Exception as e:
             log.error(
                 "There was a problem connecting to Tautulli/Sonarr/Overseerr.\
@@ -89,8 +81,6 @@ class DeleteTv(DeleteBase):
                 + str(e)
             )
             sys.exit(1)
-
-        log.info(f"Total Shows {'_' * 38}{totalsize:7.2f} GB") if totalsize else None
 
     def __purge(self, series):
         deletesize = 0
@@ -170,19 +160,10 @@ class DeleteTv(DeleteBase):
         except Exception as e:
             log.error("Overseerr API error. Error message: " + str(e))
 
-
-        deletesize = int(sonarr["statistics"]["sizeOnDisk"]) / 1073741824
-        title = self._clean_title(sonarr)
-        if (padding := 50 - len(title)) < 1:
-            padding = 1
-        log.info(f"{title}{'_' * padding}{deletesize:7.2f} GB")
-        
-        return deletesize
-
+        self.log(sonarr)
 
     def __delete_previous_seasons(self, sonarr):
         title = self._clean_title(sonarr)
-        deletesize = 0
         seasons = [
             season
             for season in sonarr.get("seasons", [])
@@ -190,13 +171,13 @@ class DeleteTv(DeleteBase):
         ]
 
         if len(seasons) <= 1:
-            return deletesize
+            return
 
         latest_season = max(season["seasonNumber"] for season in seasons)
         seasons_to_delete = [season["seasonNumber"] for season in seasons if season["seasonNumber"] < latest_season]
 
         if not seasons_to_delete:
-            return deletesize
+            return
 
         try:
             episodefiles = requests.get(
@@ -204,14 +185,14 @@ class DeleteTv(DeleteBase):
             ).json()
         except Exception as e:
             log.error(f"{title}: Error retrieving episode files: {e}")
-            return deletesize
+            return
 
         episodefiles_to_delete = [
             episode for episode in episodefiles if episode.get("seasonNumber") in seasons_to_delete
         ]
 
         if not episodefiles_to_delete:
-            return deletesize
+            return
 
         if not self.config.dryrun:
             for episodefile in episodefiles_to_delete:
@@ -228,9 +209,7 @@ class DeleteTv(DeleteBase):
         deletesize = total_bytes / 1073741824
         seasons_str = ", S".join(str(season) for season in sorted(seasons_to_delete))
         info_str = f"{title} S{seasons_str}"
-        if (padding := 50 - len(info_str)) < 1:
-            padding = 1
-        log.info(f"{info_str}{'_' * padding}{deletesize:7.2f} GB")
+        self.log(info_str, deletesize, clean_title=False)
 
         return deletesize
 

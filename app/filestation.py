@@ -1,6 +1,9 @@
 from synology_api.filestation import FileStation as FS
-import logging as log
 from time import time
+
+from delete_base import DeleteBase
+
+log = DeleteBase.get_logger()
 
 class FileStation:
     def __init__(self, config):
